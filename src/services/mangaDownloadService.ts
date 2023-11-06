@@ -95,5 +95,9 @@ async function downloadChapterImage(baseURL: string, hash: string, imageURL: str
   result.bytes = existsSync(filePath) ? statSync(filePath).size : 0;
   result.duration = Date.now() - startTime;
 
-  await reportManga(result)
+  if (baseURL.toLowerCase().includes("mangadex.network")) {
+    await reportManga(result)
+  } else {
+    console.log("Report skipped not a mangadex.network link");
+  }
 }
