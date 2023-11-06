@@ -4,7 +4,8 @@ import { getToken } from "./tokenService";
 import { CachedChapterMetadata } from "src/types/common.types";
 import { ensureDirectoryExists } from "src/utils/utils";
 import { resolve } from "path";
-import { createWriteStream, existsSync } from "fs";
+import { createWriteStream, existsSync, statSync } from "fs";
+import { reportManga } from "./mangaReportService";
 
 const downloadsDir = resolve(__dirname, "downloads");
 ensureDirectoryExists(downloadsDir);
@@ -52,14 +53,29 @@ async function downloadChapterImage(baseURL: string, hash: string, imageURL: str
   const url = `${baseURL}/${hash}/${imageURL}`;
   const filePath = resolve(chapterDirectory, imageURL);
 
+  const result = {
+    url,
+    success: false,
+    cached: false,
+    bytes: 0,
+    duration: 0,
+  };
+
   if (existsSync(filePath)) {
     console.log('Image already exists. Skipping download.');
     return;
   }
 
+  const startTime = Date.now();
+
   try {
     console.log(`Downloading image from URL: ${url}`);
+
     const response = await baseInstance.get(url, { responseType: "stream" });
+
+    if (response.headers['X-Cache'] && response.headers['X-Cache'].startsWith('HIT')) {
+      result.cached = true;
+    }
 
     const writer = createWriteStream(filePath);
     response.data.pipe(writer);
@@ -69,8 +85,15 @@ async function downloadChapterImage(baseURL: string, hash: string, imageURL: str
       writer.on("error", reject);
     });
 
+    result.success = true;
+
     console.log('Image downloaded successfully.');
   } catch (error) {
     console.error(`Error downloading image: ${error}`);
   }
+
+  result.bytes = existsSync(filePath) ? statSync(filePath).size : 0;
+  result.duration = Date.now() - startTime;
+
+  await reportManga(result)
 }
