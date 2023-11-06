@@ -50,7 +50,7 @@ export async function downloadMangaChapters(mangaName: string, volumeName: strin
 }
 
 async function downloadChapterImage(baseURL: string, hash: string, imageURL: string, chapterDirectory: string) {
-  const url = `${baseURL}/${hash}/${imageURL}`;
+  const url = `${baseURL}/data/${hash}/${imageURL}`;
   const filePath = resolve(chapterDirectory, imageURL);
 
   const result = {
