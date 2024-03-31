@@ -19,8 +19,6 @@ const limiter = new Bottleneck({
 
 baseInstance.interceptors.request.use(
   async (config) => {
-    const token = await getToken();
-    config.headers.Authorization = `${token.token_type} ${token.access_token}`;
     return await limiter.schedule(() => Promise.resolve(config));;
   },
   (error) => {
