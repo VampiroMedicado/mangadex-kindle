@@ -25,56 +25,66 @@ import { execFile, execFileSync, spawn } from "child_process";
  * @return {Promise<void>} This function does not return anything.
  */
 async function main() {
-  const { value: searchQuery }: { value: string } = await prompts({
-    name: "value",
-    type: "text",
-    message: "Search query:",
-  });
-
-  const mangaList = await getMangaList(searchQuery);
-
-  const { value: selectedManga }: { value: SelectedManga } = await prompts({
-    name: "value",
-    type: "select",
-    message: "Select a manga:",
-    choices: generateSelectMangaList(mangaList),
-  });
-
-  let downloadMore = true;
-  while (downloadMore) {
-    const volumeList = await getMangaVolumeList(
-      selectedManga.name,
-      selectedManga.id
-    );
-
-    const { value: selectedVolumes }: { value: SelectedVolume[] } =
-      await prompts({
-        name: "value",
-        type: "multiselect",
-        message: "Select a volume:",
-        choices: generateSelectVolumeList(volumeList),
-      });
-
-    for (const selectedVolume of selectedVolumes) {
-      const chaptersMetadata = await getMangaChapterList(
+  let searchMore = true;
+  while(searchMore) {
+    const { value: searchQuery }: { value: string } = await prompts({
+      name: "value",
+      type: "text",
+      message: "Search query:",
+    });
+  
+    const mangaList = await getMangaList(searchQuery);
+  
+    const { value: selectedManga }: { value: SelectedManga } = await prompts({
+      name: "value",
+      type: "select",
+      message: "Select a manga:",
+      choices: generateSelectMangaList(mangaList),
+    });
+  
+    let downloadMore = true;
+    while (downloadMore) {
+      const volumeList = await getMangaVolumeList(
         selectedManga.name,
-        selectedVolume
+        selectedManga.id
       );
-
-      await downloadMangaChapters(
-        selectedManga.name.replace(":", "-"),
-        selectedVolume.name,
-        chaptersMetadata
-      );
+  
+      const { value: selectedVolumes }: { value: SelectedVolume[] } =
+        await prompts({
+          name: "value",
+          type: "multiselect",
+          message: "Select a volume:",
+          choices: generateSelectVolumeList(volumeList),
+        });
+  
+      for (const selectedVolume of selectedVolumes) {
+        const chaptersMetadata = await getMangaChapterList(
+          selectedManga.name,
+          selectedVolume
+        );
+  
+        await downloadMangaChapters(
+          selectedManga.name.replace(":", "-"),
+          selectedVolume.name,
+          chaptersMetadata
+        );
+      }
+  
+      const { value: continueDownload } = await prompts({
+        name: "value",
+        type: "confirm",
+        message: "Do you want to download another volume?",
+      });
+  
+      downloadMore = continueDownload;
     }
-
-    const { value: continueDownload } = await prompts({
+    const { value: continueSearch } = await prompts({
       name: "value",
       type: "confirm",
-      message: "Do you want to download another volume?",
+      message: "Do you want to search for another manga?",
     });
 
-    downloadMore = continueDownload;
+    searchMore = continueSearch;
   }
 }
 
